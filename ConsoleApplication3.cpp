@@ -14,6 +14,36 @@ const int RATE_USD   = 8;
 const int RATE_EUR   = 9;
 const int MAX_NOTES  = 50;  // максимальна кількість банкнот за раз
 
+// Функція для зчитування цілих чисел з перевіркою вводу
+int readInt(bool ukrainian, const string& prompt) {
+    int value;
+    while (true) {
+        cout << prompt;
+        if (cin >> value) {
+            return value;
+        } else {
+            cout << (ukrainian ? "Некоректний ввід. Спробуйте ще раз." : "Invalid input. Try again.") << endl;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+}
+
+// Функція для зчитування дійсних чисел з перевіркою вводу
+double readDouble(bool ukrainian, const string& prompt) {
+    double value;
+    while (true) {
+        cout << prompt;
+        if (cin >> value) {
+            return value;
+        } else {
+            cout << (ukrainian ? "Некоректний ввід. Спробуйте ще раз." : "Invalid input. Try again.") << endl;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+}
+
 // Перегляд запасів банкнот
 void viewStocks(const vector<int>& denom, const vector<int>& count, const string& name) {
     cout << name << ":\n";
@@ -24,12 +54,8 @@ void viewStocks(const vector<int>& denom, const vector<int>& count, const string
 // Налаштування запасів банкнот для обраної валюти
 void configureStocks(const vector<int>& denom, vector<int>& count, bool ukrainian) {
     for (size_t i = 0; i < denom.size(); ++i) {
-        cout << denom[i] << " номінал: ";
-        cin >> count[i];
-        while (count[i] < 0) {
-            cout << (ukrainian ? "Некоректно. Спробуйте ще: " : "Invalid. Try again: ") << flush;
-            cin >> count[i];
-        }
+        string prompt = to_string(denom[i]) + (ukrainian ? " номінал: " : " denomination: ");
+        count[i] = readInt(ukrainian, prompt);
     }
 }
 
@@ -43,7 +69,7 @@ void adminMode(vector<int>& uahCnt, vector<int>& usdCnt, vector<int>& eurCnt,
         cout << (ukrainian
             ? "1. Перегляд запасів банкнот\n2. Налаштувати запас банкнот\n3. Вихід з адм. режиму\nВибір: "
             : "1. View note stocks\n2. Configure note stocks\n3. Exit admin mode\nChoice: ");
-        int choice; cin >> choice;
+        int choice = readInt(ukrainian, "");
         if (choice == 1) {
             viewStocks(uahDen, uahCnt, "UAH");
             viewStocks(usdDen, usdCnt, "USD");
@@ -51,14 +77,16 @@ void adminMode(vector<int>& uahCnt, vector<int>& usdCnt, vector<int>& eurCnt,
         }
         else if (choice == 2) {
             cout << (ukrainian ? "Оберіть валюту (1-UAH,2-USD,3-EUR): " : "Choose currency (1-UAH,2-USD,3-EUR): ");
-            int cur; cin >> cur;
+            int cur = readInt(ukrainian, "");
             if      (cur == 1) configureStocks(uahDen, uahCnt, ukrainian);
             else if (cur == 2) configureStocks(usdDen, usdCnt, ukrainian);
             else if (cur == 3) configureStocks(eurDen, eurCnt, ukrainian);
-            else cout << (ukrainian ? "Невірний вибір\n" : "Invalid choice\n");
+            else cout << (ukrainian ? "Невірний вибір" : "Invalid choice") << endl;
         }
         else if (choice == 3) {
             break;
+        } else {
+            cout << (ukrainian ? "Невірний вибір" : "Invalid choice") << endl;
         }
     }
 }
@@ -114,22 +142,12 @@ void withdraw(vector<int>& uahCnt, vector<int>& usdCnt, vector<int>& eurCnt,
 
     int cur;
     while (true) {
-        cout << (ukrainian ? "1 UAH,2 USD,3 EUR. Вибір: " : "1 UAH,2 USD,3 EUR. Choice: ") << flush;
-        if (!(cin >> cur)) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << (ukrainian ? "Введіть коректне число" : "Enter a valid number") << endl;
-            continue;
-        }
-        if (cur < 1 || cur > 3) {
-            cout << (ukrainian ? "Введіть коректне число" : "Enter a valid number") << endl;
-            continue;
-        }
-        break;
+        cur = readInt(ukrainian, (ukrainian ? "1 UAH,2 USD,3 EUR. Вибір: " : "1 UAH,2 USD,3 EUR. Choice: "));
+        if (cur >= 1 && cur <= 3) break;
+        cout << (ukrainian ? "Введіть коректне число" : "Enter a valid number") << endl;
     }
 
-    cout << (ukrainian ? "Введіть суму: " : "Enter amount: ");
-    double amt; cin >> amt;
+    double amt = readDouble(ukrainian, (ukrainian ? "Введіть суму: " : "Enter amount: "));
     int costUah = int(amt * (cur == 2 ? RATE_USD : cur == 3 ? RATE_EUR : 1));
     if (costUah > balance) {
         cout << (ukrainian ? "Недостатньо коштів" : "Insufficient funds") << endl;
@@ -156,8 +174,7 @@ void withdraw(vector<int>& uahCnt, vector<int>& usdCnt, vector<int>& eurCnt,
 void deposit(vector<int>& count, const vector<int>& denom, int& balance,
              bool ukrainian, vector<string>& history)
 {
-    cout << (ukrainian ? "Введіть суму UAH: " : "Enter UAH amount: ");
-    int dep; cin >> dep;
+    int dep = readInt(ukrainian, (ukrainian ? "Введіть суму UAH: " : "Enter UAH amount: "));
     if (dep < 1) return;
 
     vector<int> put(denom.size());
@@ -194,16 +211,13 @@ void checkBalance(int balance, bool ukrainian, vector<string>& history) {
 
 // Зміна PIN
 void changePIN(int& validPin, bool ukrainian, vector<string>& history) {
-    cout << (ukrainian ? "Введіть старий PIN: " : "Enter old PIN: ");
-    int oldp; cin >> oldp;
+    int oldp = readInt(ukrainian, (ukrainian ? "Введіть старий PIN: " : "Enter old PIN: "));
     if (oldp != validPin) {
         cout << (ukrainian ? "Невірний PIN" : "Wrong PIN") << endl;
         return;
     }
-    cout << (ukrainian ? "Введіть новий PIN: " : "Enter new PIN: ");
-    int newp; cin >> newp;
-    cout << (ukrainian ? "Підтвердіть PIN: " : "Confirm PIN: ");
-    int newp2; cin >> newp2;
+    int newp = readInt(ukrainian, (ukrainian ? "Введіть новий PIN: " : "Enter new PIN: "));
+    int newp2 = readInt(ukrainian, (ukrainian ? "Підтвердіть PIN: " : "Confirm PIN: "));
     if (newp != newp2) {
         cout << (ukrainian ? "PIN не збігаються" : "PINs do not match") << endl;
         return;
@@ -246,24 +260,20 @@ int main() {
     vector<string> history;    // зберігаємо історію операцій
 
     while (true) {
-        int lang;
-        cout << "Виберіть мову / Select language:\n"
-             << "1. Українська\n2. English\n> ";
-        cin >> lang;
+        int lang = readInt(true, "Виберіть мову / Select language (1. Українська, 2. English): ");
         bool ua = (lang == 1);
-
-        int attempts = 3, pin;
+        
+        int pin;
+        int attempts = 3;
         while (true) {
-            cout << (ua ? "\nВведіть PIN: " : "\nEnter PIN: ");
-            cin >> pin;
+            pin = readInt(ua, (ua ? "\nВведіть PIN: " : "\nEnter PIN: "));
             if (pin == ADMIN_PIN) {
                 adminMode(uahCnt, usdCnt, eurCnt, uahDen, usdDen, eurDen, ua);
                 continue;
             }
             if (pin == validPin) break;
             if (--attempts > 0) {
-                cout << (ua ? "Невірний PIN. Спроб лишилося: " : "Wrong PIN. Attempts left: ")
-                     << attempts << endl;
+                cout << (ua ? "Невірний PIN. Спроб лишилося: " : "Wrong PIN. Attempts left: ") << attempts << endl;
             } else {
                 cout << (ua ? "Блокування. Зверніться до підтримки." : "Locked. Contact support.") << endl;
                 return 0;
@@ -272,10 +282,8 @@ int main() {
 
         int choice;
         do {
-            cout << (ua ?
-                "\nМеню:\n1. Зняти готівку\n2. Внести готівку\n3. Перевірити баланс\n4. Змінити PIN\n5. Історія операцій\n6. Повернутися до вибору мови\n7. Вихід\nВибір: " :
-                "\nMenu:\n1. Withdraw\n2. Deposit\n3. Check Balance\n4. Change PIN\n5. Transaction History\n6. Restart to language selection\n7. Exit\nChoice: ");
-            cin >> choice;
+            choice = readInt(ua, (ua ? "\nМеню:\n1. Зняти готівку\n2. Внести готівку\n3. Перевірити баланс\n4. Змінити PIN\n5. Історія операцій\n6. Повернутися до вибору мови\n7. Вихід\nВибір: "
+                                    : "\nMenu:\n1. Withdraw\n2. Deposit\n3. Check Balance\n4. Change PIN\n5. Transaction History\n6. Restart to language selection\n7. Exit\nChoice: "));
             switch (choice) {
             case 1: withdraw(uahCnt, usdCnt, eurCnt, uahDen, usdDen, eurDen, balance, ua, history); break;
             case 2: deposit(uahCnt, uahDen, balance, ua, history); break;
@@ -286,7 +294,7 @@ int main() {
             case 7:
                 cout << (ua ? "До побачення!" : "Goodbye!") << endl;
                 return 0;
-            default: break;
+            default: cout << (ua ? "Невірний вибір" : "Invalid choice") << endl; break;
             }
         } while (choice != 6);
     }
